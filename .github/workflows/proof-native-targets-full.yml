@@ -1,0 +1,23 @@
+name: Proof full unit suite (temporary)
+on:
+  push:
+    branches: [proof/native-targets-full]
+jobs:
+  tests:
+    runs-on: ${{ matrix.os }}
+    strategy:
+      fail-fast: false
+      matrix:
+        os: [windows-latest, ubuntu-latest, macos-latest]
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          submodules: recursive
+      - uses: actions/setup-dotnet@v4
+        with:
+          dotnet-version: '10.0.x'
+      - name: Build tests
+        run: dotnet build tests/RoyalTerminal.Tests/RoyalTerminal.Tests.csproj -c Release
+      - name: Run the whole RoyalTerminal.Tests project
+        shell: bash
+        run: dotnet tests/RoyalTerminal.Tests/bin/Release/net10.0/RoyalTerminal.Tests.dll -parallel collections
