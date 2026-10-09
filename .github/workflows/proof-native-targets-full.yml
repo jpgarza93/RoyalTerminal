@@ -3,21 +3,27 @@ on:
   push:
     branches: [proof/native-targets-full]
 jobs:
-  tests:
-    runs-on: ${{ matrix.os }}
+  pwsh-resize:
+    runs-on: windows-latest
     strategy:
       fail-fast: false
       matrix:
-        os: [windows-latest, ubuntu-latest, macos-latest]
+        ref: [fed08f0e, ad857e6]
     steps:
       - uses: actions/checkout@v4
         with:
+          ref: ${{ matrix.ref }}
+          fetch-depth: 0
           submodules: recursive
       - uses: actions/setup-dotnet@v4
         with:
           dotnet-version: '10.0.x'
       - name: Build tests
         run: dotnet build tests/RoyalTerminal.Tests/RoyalTerminal.Tests.csproj -c Release
-      - name: Run the whole RoyalTerminal.Tests project
+      - name: Run the three PowerShell resize tests alone
         shell: bash
-        run: dotnet tests/RoyalTerminal.Tests/bin/Release/net10.0/RoyalTerminal.Tests.dll -parallel collections
+        run: >
+          dotnet tests/RoyalTerminal.Tests/bin/Release/net10.0/RoyalTerminal.Tests.dll
+          -method RoyalTerminal.Tests.TerminalControlTests.Control_WindowsPtyManagedRealPwshResize_PreservesPowerShellTableAndCursor
+          -method RoyalTerminal.Tests.TerminalControlTests.Control_WindowsPtyManagedRapidRealPwshResize_PreservesDeterministicPowerShellTableRows
+          -method RoyalTerminal.Tests.PtyContractTests.WindowsPty_PwshManagedProcessorResize_PreservesPowerShellTableAfterConptyResize
