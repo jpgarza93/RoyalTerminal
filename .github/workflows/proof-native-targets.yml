@@ -1,0 +1,19 @@
+name: Proof native targets (temporary)
+on:
+  push:
+    branches: [proof/native-targets-windows]
+jobs:
+  windows:
+    runs-on: windows-latest
+    strategy:
+      fail-fast: false
+      matrix:
+        rid: [win-x64, win-arm64]
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-dotnet@v4
+        with:
+          dotnet-version: '10.0.x'
+      - name: Before/after publish
+        shell: bash
+        run: python proof/prove.py . ${{ matrix.rid }} | tee -a "$GITHUB_STEP_SUMMARY"
