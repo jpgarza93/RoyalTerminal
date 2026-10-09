@@ -6,14 +6,15 @@ package for this OS, once with the published 0.6.1 package ("before") and once w
 
 Usage: python3 prove.py <path to RoyalTerminal checkout with the fix> <rid>
 """
-import json, os, pathlib, platform, shutil, subprocess, sys, urllib.request, zipfile
+import json, os, pathlib, platform, shutil, subprocess, sys, tempfile, urllib.request, zipfile
 
 repo = pathlib.Path(sys.argv[1]).resolve()
 rid = sys.argv[2]
 plat = {"Windows": "Win64", "Darwin": "OSX", "Linux": "Linux64"}[platform.system()]
 pkg_id = f"RoyalApps.RoyalTerminal.GhosttySharp.Native.{plat}"
 version, fixed = "0.6.1", "0.6.1-fixed"
-work = pathlib.Path(__file__).resolve().parent / f"work-{rid}"
+# Outside any repo, so no Directory.Build.* or Directory.Packages.props applies.
+work = pathlib.Path(tempfile.gettempdir()) / f"prove-native-targets-{rid}"
 shutil.rmtree(work, ignore_errors=True)
 feed = work / "feed"
 feed.mkdir(parents=True)
@@ -62,7 +63,9 @@ def run(label, pkg_version):
 </configuration>
 """)
     env = dict(os.environ, NUGET_PACKAGES=str(work / "packages"), DOTNET_CLI_TELEMETRY_OPTOUT="1")
-    subprocess.run(["dotnet", "restore", "-r", rid], cwd=proj, env=env, check=True, capture_output=True)
+    restore = subprocess.run(["dotnet", "restore", "-r", rid], cwd=proj, env=env, capture_output=True, text=True)
+    if restore.returncode:
+        sys.exit(restore.stdout + restore.stderr)
     items = json.loads(subprocess.run(
         ["dotnet", "msbuild", "-getItem:NativeLibrary", "-getItem:None", f"-p:RuntimeIdentifier={rid}"],
         cwd=proj, env=env, check=True, capture_output=True, text=True).stdout)["Items"]
